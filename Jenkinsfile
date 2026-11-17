@@ -58,6 +58,18 @@ pipeline {
                         docker logout
                     '''
                 }
+
+stage('Deploy to Docker Swarm') {
+    steps {
+        sh '''
+            docker service update \
+              --image "$IMAGE_NAME:$BUILD_NUMBER" \
+              java-sql-demo
+        '''
+    }
+}
+
+
             }
         }
     }
