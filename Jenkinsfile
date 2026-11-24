@@ -3,6 +3,10 @@ pipeline {
 
     agent any
 
+    options {
+        skipDefaultCheckout()
+    }
+
     environment {
         IMAGE_NAME = 'mouadhradhouani/java-sql-demo'
     }
@@ -15,17 +19,14 @@ pipeline {
             }
         }
 
-        stage('Build and Unit Tests') {
+        stage('Maven Build and Tests') {
             steps {
                 sh 'mvn -B clean verify'
             }
 
             post {
                 always {
-                    junit(
-                        testResults: 'target/surefire-reports/TEST-*.xml',
-                        allowEmptyResults: true
-                    )
+                    junit 'target/surefire-reports/TEST-*.xml'
                 }
             }
         }
@@ -33,7 +34,8 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 sh '''
-                    docker build -t "$IMAGE_NAME:$BUILD_NUMBER" .
+                    docker build \
+                    -t "$IMAGE_NAME:$BUILD_NUMBER" .
                 '''
             }
         }
@@ -51,26 +53,37 @@ pipeline {
                         set +x
 
                         echo "$DOCKER_TOKEN" | docker login \
-                            -u "$DOCKER_USER" --password-stdin
+                            -u "$DOCKER_USER" \
+                            --password-stdin
 
                         docker push "$IMAGE_NAME:$BUILD_NUMBER"
 
                         docker logout
                     '''
                 }
-
-stage('Deploy to Docker Swarm') {
-    steps {
-        sh '''
-            docker service update \
-              --image "$IMAGE_NAME:$BUILD_NUMBER" \
-              java-sql-demo
-        '''
-    }
-}
-
-
             }
+        }
+
+        stage('Deploy to Docker Swarm') {
+            steps {
+                sh '''
+                    docker service update \
+                        --detach=true \
+                        --image "$IMAGE_NAME:$BUILD_NUMBER" \
+                        java-sql-demo
+                '''
+            }
+        }
+
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+
+        failure {
+            echo 'Pipeline failed. Check the console output.'
         }
     }
 }
