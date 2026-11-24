@@ -39,8 +39,8 @@ public class Main {
             System.out.println("Table created successfully!");
 
             // 2. Employee information
-            String name = "Ali";
-            String city = "Mahdia";
+            String name = "mouadh";
+            String city = "tataouine";
 
             if (!EmployeeValidator.isValid(name, city)) {
                 throw new IllegalArgumentException("Invalid employee information");
